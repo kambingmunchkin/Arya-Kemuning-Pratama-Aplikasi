@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Toko Jam & Kacamata - LUXE VISTA KEMUNING</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-red-50 via-yellow-50 to-white min-h-screen font-sans">
+  <div class="max-w-5xl mx-auto p-6">
+    <header class="flex items-center justify-between mb-6">
+      <h1 class="text-3xl font-extrabold text-red-600">LUXE VISTA KEMUNING</h1>
+      <div id="auth" class="flex items-center gap-4">
+        <button id="loginBtn" class="px-4 py-2 bg-yellow-500 text-white rounded-md">Login</button>
+        <div id="userBadge" class="hidden items-center gap-2">
+          <span id="usernameDisplay" class="text-gray-700"></span>
+          <button id="logoutBtn" class="px-3 py-1 bg-red-400 text-white rounded">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <section class="md:col-span-2">
+        <h2 class="text-2xl font-bold m-4 text-red-500">Jam Tangan</h2>
+        <div id="watchesGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <!-- watch items inserted by JS -->
+        </div>
+
+        <h2 class="text-2xl font-bold mt-4 m-4 text-red-500">Kacamata</h2>
+        <div id="glassesGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <!-- glasses inserted by JS -->
+        </div>
+      </section>
+
+      <aside class="bg-white rounded-xl p-4 shadow">
+        <h3 class="font-bold text-lg mb-2">Pesanan Kamu</h3>
+        <div id="cartList" class="space-y-2">
+          <p class="text-sm text-gray-500">Belum Ada Pesanan.</p>
+        </div>
+        <div class="mt-4">
+          <p class="font-semibold">Total: <span id="cartTotal">Rp0</span></p>
+          <button id="checkoutBtn" class="w-full mt-3 px-4 py-2 bg-red-500 text-white rounded" disabled>Checkout</button>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Admin Panel (hanya untuk admin) -->
+    <section id="adminPanel" class="hidden bg-white p-6 rounded-xl shadow mt-6">
+      <h2 class="text-xl font-bold mb-4 text-yellow-600">Admin Panel - Kelola Produk</h2>
+      <div class="mb-6">
+        <h3 class="font-semibold mb-2">Tambah Produk Baru</h3>
+        <input id="newName" type="text" placeholder="Nama Produk" class="p-2 border rounded mb-2 w-full" />
+        <input id="newPrice" type="number" placeholder="Harga" class="p-2 border rounded mb-2 w-full" />
+        <input id="newImg" type="text" placeholder="URL/Gambar" class="p-2 border rounded mb-2 w-full" />
+        <select id="newType" class="p-2 border rounded mb-2 w-full">
+          <option value="watch">Jam Tangan</option>
+          <option value="glasses">Kacamata</option>
+        </select>
+        <button id="addProductBtn" class="px-4 py-2 bg-red-600 text-white rounded">Tambah Produk</button>
+      </div>
+      <div>
+        <h3 class="font-semibold mb-2">Daftar Produk</h3>
+        <div id="productList" class="space-y-2"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- modal login -->
+  <div id="loginModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center">
+    <div class="bg-white rounded-lg p-6 w-96">
+      <h3 class="text-xl font-bold mb-4">Login</h3>
+      <label class="block mb-2">Username</label>
+      <input id="loginUsername" class="w-full mb-3 p-2 border rounded" />
+      <label class="block mb-2">Password</label>
+      <input id="loginPassword" type="password" class="w-full mb-3 p-2 border rounded" />
+      <div class="flex justify-end gap-2">
+        <button id="cancelLogin" class="px-3 py-2">Batal</button>
+        <button id="doLogin" class="px-4 py-2 bg-yellow-500 text-white rounded">Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // data produk
+    let watches = [
+      { id: 'sevenminute', name: 'Seven Minute', price: 250000, img: 'seven minute.jpg' },
+      { id: 'smartwatch', name: 'Smart Watch', price: 500000, img: 'Smart Watch Reebox.jpg' },
+      { id: 'lige', name: 'LIGE', price: 400000, img: 'lige.jpg' },
+      { id: 'sunlifex', name: 'Sunlifex', price: 350000, img: 'sunlifex.jpg' },
+      { id: 'eboni', name: 'Eboni', price: 300000, img: 'eboni.jpg' },
+      { id: 'alexandre', name: 'Alexandre Christie', price: 600000, img: 'Alexandre Christie.jpg' }
+    ];
+
+    let glasses = [
+      { id: 'greyjack', name: 'Grey Jack', price: 150000, img: 'Grey Jack Sunglasses.jpg' },
+      { id: 'gentlefawn', name: 'Gentle Fawn', price: 180000, img: 'Gentle Fawn Sunglasses.jpg' },
+      { id: 'ruby', name: 'Ruby Taylor Metal', price: 200000, img: 'Ruby Taylor.jpg' },
+      { id: 'berry', name: 'Berry Barton', price: 160000, img: 'Barry Barton.jpg' },
+      { id: 'geoff', name: 'Geoff Max Vegas Black Thunder', price: 220000, img: 'Geoff Max.jpg' },
+      { id: 'genius', name: 'Genius Maiden', price: 190000, img: 'Genius Maiden.jpg' }
+    ];
+
+    // basic auth
+    const USERS = [
+      { username: 'Luxe Vista.Kemuning', password: 'lvk123' },
+      { username: 'admin', password: 'lvk1234' } // admin untuk panel
+    ];
+
+    let currentUser = null;
+    let cart = {};
+
+    function formatIDR(n) {
+      return 'Rp' + n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
+    function renderMenu() {
+      const wg = document.getElementById('watchesGrid');
+      wg.innerHTML = '';
+      watches.forEach(w => {
+        const card = document.createElement('div');
+        card.className = 'bg-white p-3 rounded-lg shadow flex flex-col items-center';
+        card.innerHTML = `
+          <div class="w-full h-32 mb-3">
+            <img src="${w.img}" alt="${w.name}" class="w-full h-full object-cover rounded">
+          </div>
+          <h4 class="font-semibold">${w.name}</h4>
+          <p class="text-sm text-gray-600">${formatIDR(w.price)}</p>
+          <div class="mt-3 flex gap-2">
+            <button class="px-2 py-1 bg-yellow-100 rounded addBtn" data-id="${w.id}">+</button>
+            <span id="qty_${w.id}">${cart[w.id] || 0}</span>
+            <button class="px-2 py-1 bg-red-100 rounded subBtn" data-id="${w.id}">-</button>
+          </div>
+        `;
+        wg.appendChild(card);
+      });
+
+      const gg = document.getElementById('glassesGrid');
+      gg.innerHTML = '';
+      glasses.forEach(g => {
+        const card = document.createElement('div');
+        card.className = 'bg-white p-3 rounded-lg shadow flex flex-col items-center';
+        card.innerHTML = `
+          <div class="w-full h-32 mb-3">
+            <img src="${g.img}" alt="${g.name}" class="w-full h-full object-cover rounded">
+          </div>
+          <h4 class="font-semibold">${g.name}</h4>
+          <p class="text-sm text-gray-600">${formatIDR(g.price)}</p>
+          <div class="mt-3 flex gap-2">
+            <button class="px-2 py-1 bg-yellow-100 rounded addBtn" data-id="${g.id}">+</button>
+            <span id="qty_${g.id}">${cart[g.id] || 0}</span>
+            <button class="px-2 py-1 bg-red-100 rounded subBtn" data-id="${g.id}">-</button>
+          </div>
+        `;
+        gg.appendChild(card);
+      });
+
+      document.querySelectorAll('.addBtn').forEach(b => b.addEventListener('click', () => changeQty(b.dataset.id, 1)));
+      document.querySelectorAll('.subBtn').forEach(b => b.addEventListener('click', () => changeQty(b.dataset.id, -1)));
+    }
+
+    function changeQty(id, delta) {
+      if (!currentUser || currentUser === 'admin') {
+        if (currentUser !== 'admin') alert('Harap login untuk memesan.');
+        return;
+      }
+      const product = watches.find(x => x.id === id) || glasses.find(x => x.id === id);
+      if (!product) return;
+      cart[id] = Math.max(0, (cart[id] || 0) + delta);
+      document.getElementById('qty_' + id).innerText = cart[id];
+      renderCart();
+    }
+
+    function renderCart() {
+      const list = document.getElementById('cartList');
+      list.innerHTML = '';
+      const entries = Object.keys(cart).filter(k => cart[k] > 0);
+      if (entries.length === 0) {
+        list.innerHTML = '<p class="text-sm text-gray-500">Belum ada pesanan.</p>';
+        document.getElementById('checkoutBtn').disabled = true;
+        document.getElementById('cartTotal').innerText = formatIDR(0);
+        return;
+      }
+      let total = 0;
+      entries.forEach(k => {
+        const product = watches.find(x => x.id === k) || glasses.find(x => x.id === k);
+        const qty = cart[k];
+        total += product.price * qty;
+        const row = document.createElement('div');
+        row.className = 'flex justify-between items-center';
+        row.innerHTML = `<div><div class="font-medium">${product.name}</div><div class="text-xs text-gray-500">${formatIDR(product.price)} x ${qty}</div></div><div><button class="px-2 py-1 bg-yellow-200 rounded cancelBtn" data-id="${k}">Hapus</button></div>`;
+        list.appendChild(row);
+      });
+      document.getElementById('cartTotal').innerText = formatIDR(total);
+      document.getElementById('checkoutBtn').disabled = false;
+
+      document.querySelectorAll('.cancelBtn').forEach(b => b.addEventListener('click', () => { delete cart[b.dataset.id]; renderMenu(); renderCart(); }));
+    }
+
+    // Login & Logout
+    document.getElementById('doLogin').addEventListener('click', () => {
+      const u = document.getElementById('loginUsername').value;
+      const p = document.getElementById('loginPassword').value;
+      const found = USERS.find(x => x.username === u && x.password === p);
+      if (found) {
+        currentUser = found.username;
+        document.getElementById('usernameDisplay').innerText = currentUser;
+        document.getElementById('userBadge').classList.remove('hidden');
+        document.getElementById('loginBtn').classList.add('hidden');
+        document.getElementById('loginModal').classList.add('hidden');
+        document.getElementById('loginModal').classList.remove('flex');
+        if (currentUser === 'admin') {
+          renderAdminPanel();
+          document.querySelector('aside').classList.add('hidden');
+        } else {
+          renderMenu();
+          document.querySelector('aside').classList.remove('hidden');
+        }
+      } else {
+        alert('Username atau password salah.');
+      }
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      currentUser = null;
+      document.getElementById('userBadge').classList.add('hidden');
+      document.getElementById('loginBtn').classList.remove('hidden');
+      cart = {};
+      renderMenu();
+      renderCart();
+      renderAdminPanel();
+      document.querySelector('aside').classList.remove('hidden');
+    });
+
+    // Admin Panel
+    function renderAdminPanel() {
+      if (currentUser === 'admin') {
+        document.getElementById('adminPanel').classList.remove('hidden');
+        const list = document.getElementById('productList');
+        list.innerHTML = '';
+        [...watches, ...glasses].forEach(p => {
+          const row = document.createElement('div');
+          row.className = 'flex justify-between items-center bg-gray-50 p-2 rounded';
+          row.innerHTML = `
+            <div class="flex items-center gap-3">
+              <img src="${p.img}" alt="${p.name}" class="w-12 h-12 object-cover rounded">
+              <div>
+                <div class="font-medium">${p.name}</div>
+                <div class="text-xs text-gray-500">${formatIDR(p.price)}</div>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button class="px-2 py-1 bg-yellow-300 rounded editBtn" data-id="${p.id}">Edit</button>
+              <button class="px-2 py-1 bg-red-400 text-white rounded deleteBtn" data-id="${p.id}">Hapus</button>
+            </div>
+          `;
+          list.appendChild(row);
+        });
+
+        document.querySelectorAll('.deleteBtn').forEach(b => {
+          b.addEventListener('click', () => {
+            const id = b.dataset.id;
+            watches = watches.filter(x => x.id !== id);
+            glasses = glasses.filter(x => x.id !== id);
+            renderAdminPanel();
+          });
+        });
+
+        document.querySelectorAll('.editBtn').forEach(b => {
+          b.addEventListener('click', () => {
+            const id = b.dataset.id;
+            let product = watches.find(x => x.id === id) || glasses.find(x => x.id === id);
+            const newName = prompt('Nama baru:', product.name);
+            const newPrice = prompt('Harga baru:', product.price);
+            const newImg = prompt('URL/Gambar baru:', product.img);
+            if (newName) product.name = newName;
+            if (newPrice) product.price = parseInt(newPrice);
+            if (newImg) product.img = newImg;
+            renderAdminPanel();
+          });
+        });
+
+        document.getElementById('addProductBtn').onclick = () => {
+          const name = document.getElementById('newName').value;
+          const price = parseInt(document.getElementById('newPrice').value);
+          const img = document.getElementById('newImg').value;
+          const type = document.getElementById('newType').value;
+          if (!name || !price || !img) { alert('Lengkapi semua data!'); return; }
+          const newProduct = { id: name.toLowerCase().replace(/\s+/g, '_') + Date.now(), name, price, img };
+          if (type === 'watch') watches.push(newProduct);
+          else glasses.push(newProduct);
+          document.getElementById('newName').value = '';
+          document.getElementById('newPrice').value = '';
+          document.getElementById('newImg').value = '';
+          renderAdminPanel();
+        };
+      } else {
+        document.getElementById('adminPanel').classList.add('hidden');
+      }
+    }
+
+    document.getElementById('loginBtn').addEventListener('click', () => {
+      document.getElementById('loginModal').classList.remove('hidden');
+      document.getElementById('loginModal').classList.add('flex');
+    });
+    document.getElementById('cancelLogin').addEventListener('click', () => {
+      document.getElementById('loginModal').classList.add('hidden');
+      document.getElementById('loginModal').classList.remove('flex');
+    });
+
+    document.getElementById('checkoutBtn').addEventListener('click', () => {
+      if (!currentUser) { alert('Harap login terlebih dahulu.'); return; }
+      alert('Terima kasih, ' + currentUser + '! Pesanan Anda telah diterima.');
+      cart = {};
+      renderMenu();
+      renderCart();
+    });
+
+    renderMenu();
+    renderCart();
+  </script>
+</body>
+</html>
+
